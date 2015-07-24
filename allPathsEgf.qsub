@@ -1,0 +1,24 @@
+#!/bin/sh
+## Set stderr and stdout using absolute directories
+#PBS -o /home/agitter/human/egf/storedPaths/allPathsEgf.out
+#PBS -e /home/agitter/human/egf/storedPaths/allPathsEgf.err
+## Name the job
+#PBS -N allPathsEgf
+## Run on a single node and 8 cores on that node
+#PBS -l nodes=1:ppn=8
+## Estimated max RAM is for Java heap (2 GB per each of 8 threads) plus extra buffer
+#PBS -l mem=20gb
+## Select the queue
+#PBS -q zbj1
+
+## Change to working directory
+cd $PBS_O_WORKDIR
+
+## Print job information before running
+echo Job name is $PBS_JOBNAME
+echo Job id is $PBS_JOBID
+echo Queue used is $PBS_O_QUEUE
+echo Time is `date`
+
+## Start StorePaths.jar
+java -Xmx16g -jar StorePaths.jar /home/agitter/human/egf/storedPaths/allPathsEgf.props

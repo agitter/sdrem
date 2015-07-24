@@ -1,0 +1,70 @@
+# Locations of network data
+edges.file = ../../human/ppi/ppi_ptm_pd_edges.txt
+sources.file = ../../human/egf/sources.txt
+
+# The directory in which output will be written
+# This directory must contain the DREM settings file and the binding priors file
+model.dir = ../../human/egf/sdrem011712
+drem.settings.file = DREM_defaults.txt
+
+# A String used to locate the binding priors file at the first iteration of the form
+# modelDir/<binding.priors>0.txt
+binding.priors.file = tfActivityPriors_round
+
+# Optional location of the file that gives a specific node weight
+# for particular nodes
+# Comment this line out to use the default.node.prior for all nodes
+#node.priors.file =
+
+# Optional directory that contains one file per target with paths (all or only top-ranked)
+# that terminate at that target
+# Comment this line out to enumerate paths at runtime
+stored.paths.dir = ../../human/egf/storedPaths/allPathsEgf100k/
+
+# SDREM iterations
+iterations = 10
+
+# Max path length of 5 or fewer is recommended for large networks
+max.path.length = 5
+
+# Store only this many top-ranked paths during enumeration.
+# Use -1 to enumerate all paths
+path.enum.bound = 100000
+
+# The number of random restarts during network orientation (the best solution will be used)
+# and the number of random restarts to use when calcualting node and target scores
+orientation.restarts = 20
+
+# The number of times to run DREM with randomized binding data
+drem.random.runs = 10
+
+# The number of top-ranked TFs to use to build the activity score distribution
+dist.tfs = 50
+
+# The number of top-ranked paths to consider when generating node scores.
+# Use -1 to set this to 5 * (number of targets), which will be different
+# at each iteration
+top.paths = 1000
+
+# Only TFs that fall at or above this percentile in the activity score distribution
+# are considered to be targets
+dist.thresh = 0.5
+
+# The target score threshold in the oriented network for increasing or decreasing
+# binding priors
+target.thresh = 0.8
+
+# The node score threshold in the oriented network for increasing or decreasing
+# binding priors
+node.thresh = 0.01
+
+# The weight of all nodes that are not given a node-specific weight in the
+# node.priors.file
+default.node.prior = 0.5
+
+# The minimum binding prior allowed
+min.prior = 0.01
+
+# The ratio to random targets to real targets when running network orientation with
+# random targets to generate targets scores
+random.target.ratio = 1

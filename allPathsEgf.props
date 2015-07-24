@@ -1,0 +1,22 @@
+# Either store, filter, or store/filter
+mode = store/filter
+
+# Network data
+sources.file = ../../human/egf/sources.txt
+targets.file = ../../human/proteinDna/tfList.txt
+edges.file = ../../human/ppi/ppi_ptm_pd_egdes.txt
+# Node priors for certain nodes.  May be left blank.
+#node.priors.file = 
+# Maximum number of edges to allow in a path
+max.path.length = 5
+# Node prior for all nodes not appearing in the node.priors.file
+default.node.prior = 0.5
+
+# The directory that stored all enumerated paths and from which
+# paths are read when filtering
+stored.paths.dir = ../../human/egf/storedPaths/allPathsEgf
+
+# The number of top-scoring paths to keep after filtering
+path.enum.bound = 100000
+# The directory where the filtered paths are stored
+filtered.paths.dir = ../../human/egf/storedPaths/allPathsEgf100k
