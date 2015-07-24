@@ -1,14 +1,21 @@
+***********************************************
+Version 1.2.1
+***********************************************
+
 The SDREM software is described in:
 
 Linking the signaling cascades and dynamic regulatory networks controlling stress responses. 
 Anthony Gitter, Miri Carmi, Naama Barkai, Ziv Bar-Joseph. 
 Genome Research. 23:2, 2013.
+http://www.genome.org/cgi/doi/10.1101/gr.138628.112
 
 Identifying proteins controlling key disease signaling pathways. 
 Anthony Gitter, Ziv Bar-Joseph. 
 Bioinformatics. 29:13, 2013.
+http://bioinformatics.oxfordjournals.org/content/29/13/i227.full
 
-Contact agitter@cs.cmu.edu with any questions.
+Please cite one or both of those manuscripts if using the software in published work.
+Contact gitter@biostat.wisc.edu with any questions.
 
 Use of this code implies the user has accepted the terms of license.txt.
 The code requires Java 5.0 or above.

@@ -1,7 +1,7 @@
-The SDREM software makes use of several existing tools, each of which has its own license.  Please review and agree to the network orientation, DREM, Piccolo, and Ant licenses before using the SDREM software.
+The SDREM software makes use of several existing tools, each of which has its own license.  Please review and agree to the maximum edge orientation, DREM, Piccolo, and Ant licenses before using the SDREM software.
 
 ***********************************************
-Network orientation
+Maximum edge orientation
 ***********************************************
 Copyright (c) 2009, Anthony Gitter
 All rights reserved.
@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ***********************************************
-DREM
+DREM (http://www.andrew.cmu.edu/user/zivbj/dremreg.html)
 ***********************************************
 Dynamic Regulatory Events Miner (DREM)
 SOFTWARE LICENSE AGREEMENT
