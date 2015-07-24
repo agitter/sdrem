@@ -1457,14 +1457,16 @@ public class TargetScores {
 
 					if(change[t])
 					{
-						if(parts[t].equals("0"))
+						double val = Double.parseDouble(parts[t]);
+						// Don't require the value to be exactly 0.0
+						if(Math.abs(val) < 0.000001)
 						{
 							// Write 0 again if the TF doesn't bind this gene
 							buf.append(parts[t]);
 						}
+						// Nonzero values need to be adjusted
 						else
 						{
-							double val = Double.parseDouble(parts[t]);
 							if(increase[t])
 							{
 								// The new value is the average of val and 1
@@ -1480,7 +1482,8 @@ public class TargetScores {
 					}
 					else
 					{
-						// Write the original value if this TF wasn't a target
+						// Write the original value if this TF wasn't a target or didn't
+						// have a high node score
 						buf.append(parts[t]);
 					}
 				} // done processing a line
@@ -2504,7 +2507,8 @@ public class TargetScores {
 			// Load the node score of all proteins, including sources and targets
 			// Use the % of top paths for the node score
 			HashMap<String, String> nodeScoreMap = MapUtil.loadMap(nsArray[0].getCanonicalPath(), 0, 5, true);
-
+			System.out.println("Loaded node scores from " + nsArray[0].getCanonicalPath());
+			
 			// Determine which proteins have node scores >= the threshold
 			HashSet<String> importantNodes = new HashSet<String>();
 			for(String node : nodeScoreMap.keySet())
@@ -4445,8 +4449,10 @@ public class TargetScores {
 	}
 	
 
+	// This version does not take the number of top-ranked paths as a parameter,
+	// it is fixed to 1000
 	/**
-	 * Compare different methods of prediction genetic screens.
+	 * Compare different methods of predicting genetic screens.
 	 * Consider sources and nodes with high node scores (which may include targets)
 	 * @param edgeFile
 	 * @param srcFile
@@ -5207,6 +5213,539 @@ public class TargetScores {
 			e.printStackTrace();
 		}
 	}
+	
+	
+	/**
+	 * Compare different methods of predicting genetic screens.
+	 * Consider sources and nodes with high node scores (which may include targets).
+	 * Copied from predictGeneticScreens and stripped to not take in known
+	 * screen hits or calculate AUC.
+	 * @param edgeFile
+	 * @param srcFile
+	 * @param targFile
+	 * @param nodePriorsDir
+	 * @param nodeScoresPrefix
+	 * @param defaultPrior
+	 * @param nodeScoresFile
+	 * @param nodeScoreThresh
+	 * @param numTopPaths
+	 * @param satPathsFile all of the satisifed paths from the SDREM output
+	 * @param fullOutFile the predicted deletion scores for all genes of interest
+	 * @param pairsOutFile the predicted genetic interactions for all pairs of genes of
+	 * interest.  Set as null or "" to ignore.
+	 */
+	public static void predictGeneticScreens(String edgeFile, String srcFile, String targFile,
+			String nodePriorsFile, double defaultPrior,
+			String nodeScoresDir,
+			final String nodeScoresPrefix,
+			double nodeScoreThresh,
+			int numTopPaths,
+			String satPathsFile,
+			String fullOutFile,
+			String pairsOutFile)
+	{
+		try
+		{
+			boolean usePairs = (pairsOutFile != null && !pairsOutFile.equals(""));
+			
+			// Load the satisfied paths
+			Vertex.setNodePriors(nodePriorsFile, defaultPrior);
+			Graph graph = new Graph();
+			DataLoader.readEdgesFromEda(graph, edgeFile);
+			DataLoader.readSources(graph, srcFile);
+			DataLoader.readTargets(graph, targFile);
+			ArrayList<Path> satPaths = graph.loadStoredPaths(StringPath.loadFile(satPathsFile, true));
+			System.out.println("Loaded " + satPaths.size() + " satisfied paths to predict screen hits");
+
+			// Store the top-ranked satisfied paths
+			Collections.sort(satPaths, Path.getComparator("PathWeight"));
+			Collections.reverse(satPaths); // Order largest to smallest
+			// If numTopPaths is set to -1, calculate the number of top paths
+			// dynamically by taking 5 * the number of targets
+			if (numTopPaths < 0)
+			{
+				numTopPaths = 5 * graph.getTargets().size();
+			}
+			int thresh = Math.min(numTopPaths, satPaths.size());
+			
+			ArrayList<Path> topPaths = new ArrayList<Path>(thresh);
+			for(int t = 0; t < thresh; t++)
+			{
+				topPaths.add(satPaths.get(t));
+			}
+			
+			HashSet<String> sources = MapUtil.loadSet(srcFile, false);
+			HashSet<String> sourcesAndInternal = new HashSet<String>(sources);
+
+			// Find the node scores file
+			File nsDir = new File(nodeScoresDir);
+			File[] nsArray = nsDir.listFiles(new FilenameFilter()
+			{
+				public boolean accept(File dir, String name)
+				{
+					return (name.matches(nodeScoresPrefix + ".*"));
+				}
+			});
+			if(nsArray.length != 1)
+			{
+				throw new IOException("Could not find unique node score file");
+			}
+			String nodeScoresFile = nsArray[0].getCanonicalPath();
+			
+			// Load the node score of all proteins, including sources and targets
+			// Use the % of top paths for the node score
+			HashMap<String, String> nodeScoreMapStr = MapUtil.loadMap(nodeScoresFile, 0, 5, true);
+			HashMap<String, Double> nodeScoreMap = new HashMap<String, Double>(nodeScoreMapStr.size());
+			
+			// Determine which proteins have node scores >= the threshold
+			for(String node : nodeScoreMapStr.keySet())
+			{
+				double score = Double.parseDouble(nodeScoreMapStr.get(node));
+				nodeScoreMap.put(node, score);
+				if(score >= nodeScoreThresh)
+				{
+					sourcesAndInternal.add(node);
+				}
+			}
+			System.out.println("Scoring " + sourcesAndInternal.size() + " sources and high-scoring nodes");
+			
+			// Also load the degree of all proteins
+			HashMap<String, String> degreeMapStr = MapUtil.loadMap(nodeScoresFile, 0, 4, true);
+			HashMap<String, Integer> degreeMap = new HashMap<String, Integer>(degreeMapStr.size());
+			for(String node : degreeMapStr.keySet())
+			{
+				degreeMap.put(node, Integer.parseInt(degreeMapStr.get(node)));
+			}
+			
+			// Convert the protein names to Vertex objects
+			ArrayList<Vertex> nodesToScore = new ArrayList<Vertex>();
+			for(String nodeId : sourcesAndInternal)
+			{
+				Vertex node = Vertex.findVertex(nodeId);
+				if(node == null)
+				{
+					throw new IllegalStateException("Cannot find vertex " + nodeId + " in the graph");
+				}
+				nodesToScore.add(node);
+			}
+			// Sort the nodes so that the output file is identical across runs
+			// with the same settings
+			Collections.sort(nodesToScore);
+			
+			// Calculate the predicted genetic screen scores using the different metrics
+			// Name the variables using all/top-ranked satisfied paths, source-target pairs
+			// or target connectivity only (single source mode), unweighted/weighted,
+			// and average/min (only applicable for weighted)
+			// First the four unweighted metrics
+			HashMap<String, Double> allStUnw = reachabilityScore(satPaths,
+					nodesToScore,
+					false,
+					false,
+					false);
+			HashMap<String, Double> topStUnw = reachabilityScore(topPaths,
+					nodesToScore,
+					false,
+					false,
+					false);
+			HashMap<String, Double> allTargUnw = reachabilityScore(satPaths,
+					nodesToScore,
+					true,
+					false,
+					false);
+			HashMap<String, Double> topTargUnw = reachabilityScore(topPaths,
+					nodesToScore,
+					true,
+					false,
+					false);
+			
+			// Then the four weighted metrics that aggregate using the average
+			HashMap<String, Double> allStAvg = reachabilityScore(satPaths,
+					nodesToScore,
+					false,
+					true,
+					true);
+			HashMap<String, Double> topStAvg = reachabilityScore(topPaths,
+					nodesToScore,
+					false,
+					true,
+					true);
+			HashMap<String, Double> allTargAvg = reachabilityScore(satPaths,
+					nodesToScore,
+					true,
+					true,
+					true);
+			HashMap<String, Double> topTargAvg = reachabilityScore(topPaths,
+					nodesToScore,
+					true,
+					true,
+					true);
+			
+			// Then the four weighted metrics that aggregate using the min
+			HashMap<String, Double> allStMin = reachabilityScore(satPaths,
+					nodesToScore,
+					false,
+					true,
+					false);
+			HashMap<String, Double> topStMin = reachabilityScore(topPaths,
+					nodesToScore,
+					false,
+					true,
+					false);
+			HashMap<String, Double> allTargMin = reachabilityScore(satPaths,
+					nodesToScore,
+					true,
+					true,
+					false);
+			HashMap<String, Double> topTargMin = reachabilityScore(topPaths,
+					nodesToScore,
+					true,
+					true,
+					false);
+			
+			// Control for the node score and degree being used for tie-breaking
+			HashMap<String, Double> nodeScoreOnly = new HashMap<String, Double>();
+			for(Vertex node : nodesToScore)
+			{
+				// 1 means that 100% of the targets are still connected after the
+				// gene is removed (therefore need to check node score to rank)
+				nodeScoreOnly.put(node.toString(), 1.0);
+			}
+
+			ArrayList<HashMap<String, Double>> scoresList = new ArrayList<HashMap<String, Double>>();
+			scoresList.add(allStUnw);
+			scoresList.add(topStUnw);
+			scoresList.add(allTargUnw);
+			scoresList.add(topTargUnw);
+			scoresList.add(allStAvg);
+			scoresList.add(topStAvg);
+			scoresList.add(allTargAvg);
+			scoresList.add(topTargAvg);
+			scoresList.add(allStMin);
+			scoresList.add(topStMin);
+			scoresList.add(allTargMin);
+			scoresList.add(topTargMin);
+			scoresList.add(nodeScoreOnly);
+			String[] metricNamesArr = {"allStUnw",
+					"topStUnw",
+					"allTargUnw",
+					"topTargUnw",
+					"allStAvg",
+					"topStAvg",
+					"allTargAvg",
+					"topTargAvg",
+					"allStMin",
+					"topStMin",
+					"allTargMin",
+					"topTargMin",
+					"nodeScore",};
+			ArrayList<String> metricNames = new ArrayList<String>(Arrays.asList(metricNamesArr));
+			// Rank the nodes for each metric
+			ArrayList<HashMap<String, Integer>> ranksList = new ArrayList<HashMap<String, Integer>>();
+			for(HashMap<String, Double> metric : scoresList)
+			{
+				ranksList.add(reachabilityRanks(metric, nodeScoreMap, degreeMap));
+			}
+			
+			// Write the scores generated by each metric along with the degree and
+			// original node score
+			PrintWriter writer = new PrintWriter(new FileWriter(fullOutFile));
+			
+			writer.print("Gene\tSource\tNode score\tDegree");
+			for(String name : metricNames)
+			{
+				writer.print("\t" + name);
+			}
+			for(String name : metricNames)
+			{
+				writer.print("\t" + name + "Rank");
+			}
+			writer.println();
+			
+			for(Vertex node : nodesToScore)
+			{
+				String nodeId = node.toString();
+				StringBuffer buf = new StringBuffer();
+				buf.append(nodeId).append("\t");
+				
+				if(sources.contains(nodeId))
+				{
+					buf.append("Y");
+				}
+				else
+				{
+					buf.append("N");
+				}
+				
+				if(!nodeScoreMap.containsKey(nodeId) || !degreeMap.containsKey(nodeId))
+				{
+					throw new IllegalStateException("Cannot find node score " + 
+							"and degree for " + nodeId);
+				}
+				buf.append("\t").append(nodeScoreMap.get(nodeId));
+				buf.append("\t").append(degreeMap.get(nodeId));
+				
+				// Finally, write the score for this node from each metric
+				// and the rank from this metric
+				for(HashMap<String, Double> scoreMetric : scoresList)
+				{
+					if(!scoreMetric.containsKey(nodeId))
+					{
+						throw new IllegalStateException("Cannot find all metric scores " + 
+								"for " + nodeId);
+					}
+					buf.append("\t").append(scoreMetric.get(nodeId));
+				}
+				for(HashMap<String, Integer> rankMetric : ranksList)
+				{
+					if(!rankMetric.containsKey(nodeId))
+					{
+						throw new IllegalStateException("Cannot find all metric scores " + 
+								"for " + nodeId);
+					}
+					buf.append("\t").append(rankMetric.get(nodeId));
+				}
+				writer.println(buf);
+			}
+			
+			writer.close();
+			
+			// If an output files is provided for the gene pair scores,
+			// calculate the scores and write them here
+			if(usePairs)
+			{
+				// First the four unweighted metrics
+				HashMap<String, Double> allStUnwPairs = reachabilityScore(satPaths,
+						nodesToScore,
+						false,
+						false,
+						false,
+						true);
+				HashMap<String, Double> topStUnwPairs = reachabilityScore(topPaths,
+						nodesToScore,
+						false,
+						false,
+						false,
+						true);
+				HashMap<String, Double> allTargUnwPairs = reachabilityScore(satPaths,
+						nodesToScore,
+						true,
+						false,
+						false,
+						true);
+				HashMap<String, Double> topTargUnwPairs = reachabilityScore(topPaths,
+						nodesToScore,
+						true,
+						false,
+						false,
+						true);
+				
+				// Then the four weighted metrics that aggregate using the average
+				HashMap<String, Double> allStAvgPairs = reachabilityScore(satPaths,
+						nodesToScore,
+						false,
+						true,
+						true,
+						true);
+				HashMap<String, Double> topStAvgPairs = reachabilityScore(topPaths,
+						nodesToScore,
+						false,
+						true,
+						true,
+						true);
+				HashMap<String, Double> allTargAvgPairs = reachabilityScore(satPaths,
+						nodesToScore,
+						true,
+						true,
+						true,
+						true);
+				HashMap<String, Double> topTargAvgPairs = reachabilityScore(topPaths,
+						nodesToScore,
+						true,
+						true,
+						true,
+						true);
+				
+				// Then the four weighted metrics that aggregate using the min
+				HashMap<String, Double> allStMinPairs = reachabilityScore(satPaths,
+						nodesToScore,
+						false,
+						true,
+						false,
+						true);
+				HashMap<String, Double> topStMinPairs = reachabilityScore(topPaths,
+						nodesToScore,
+						false,
+						true,
+						false,
+						true);
+				HashMap<String, Double> allTargMinPairs = reachabilityScore(satPaths,
+						nodesToScore,
+						true,
+						true,
+						false,
+						true);
+				HashMap<String, Double> topTargMinPairs = reachabilityScore(topPaths,
+						nodesToScore,
+						true,
+						true,
+						false,
+						true);
+				
+				// Order the pairs so that the output is consistent across runs
+				// with the same settings
+				ArrayList<String> pairs = new ArrayList<String>(allStUnwPairs.keySet());
+				Collections.sort(pairs);	
+				
+				// Compute the double deletion effects for each metric
+				ArrayList<HashMap<String, Double>> pairsScoresList = new ArrayList<HashMap<String, Double>>();
+				pairsScoresList.add(allStUnwPairs);
+				pairsScoresList.add(topStUnwPairs);
+				pairsScoresList.add(allTargUnwPairs);
+				pairsScoresList.add(topTargUnwPairs);
+				pairsScoresList.add(allStAvgPairs);
+				pairsScoresList.add(topStAvgPairs);
+				pairsScoresList.add(allTargAvgPairs);
+				pairsScoresList.add(topTargAvgPairs);
+				pairsScoresList.add(allStMinPairs);
+				pairsScoresList.add(topStMinPairs);
+				pairsScoresList.add(allTargMinPairs);
+				pairsScoresList.add(topTargMinPairs);
+				
+				// Remove the node score metric
+				scoresList.remove(scoresList.size()-1);
+				ranksList.remove(ranksList.size()-1);
+				metricNames.remove(metricNames.size()-1);
+				if(scoresList.size() != pairsScoresList.size() ||
+						ranksList.size() != pairsScoresList.size() ||
+						metricNames.size() != pairsScoresList.size())
+				{
+					throw new IllegalStateException("Must use same metrics for single " +
+							"and double deletions");
+				}
+				
+				// Compute the predicted genetic interactions for each metric
+				ArrayList<HashMap<String, Double>> genIntsList = new ArrayList<HashMap<String, Double>>();
+				for(int s = 0; s < scoresList.size(); s++)
+				{
+					genIntsList.add(geneticInts(scoresList.get(s), pairsScoresList.get(s)));
+				}
+				
+				// Rank the predicted genetic interactions for each metric
+				ArrayList<HashMap<String, Integer>> pairsRanksList = new ArrayList<HashMap<String, Integer>>();
+				for(HashMap<String, Double> metric : genIntsList)
+				{
+					pairsRanksList.add(reachabilityRanks(metric, nodeScoreMap, degreeMap, true));
+				}
+				
+				writer = new PrintWriter(new FileWriter(pairsOutFile));
+
+				writer.print("Gene A\tGene B\tSource A\tSource B\t" + 
+						"Node score A\tNode score B\tDegree A\tDegree B");
+				for(String name : metricNames)
+				{
+					writer.print("\t" + name + "_int");
+					writer.print("\t" + name + "_obs_AB");
+					writer.print("\t" + name + "_exp_AB");
+					writer.print("\t" + name + "_obs_A");
+					writer.print("\t" + name + "_obs_B");
+				}
+				for(String name : metricNames)
+				{
+					writer.print("\t" + name + "Rank");
+				}
+				writer.println();
+				
+				for(String pair : pairs)
+				{
+					String[] nodeIds = pair.split("\t");
+					String a = nodeIds[0];
+					String b = nodeIds[1];
+
+					StringBuffer buf = new StringBuffer();
+					buf.append(a).append("\t").append(b).append("\t");
+					
+					if(sources.contains(a))
+					{
+						buf.append("Y\t");
+					}
+					else
+					{
+						buf.append("N\t");
+					}
+					if(sources.contains(b))
+					{
+						buf.append("Y");
+					}
+					else
+					{
+						buf.append("N");
+					}
+					
+					if(!nodeScoreMap.containsKey(a) || !degreeMap.containsKey(a))
+					{
+						throw new IllegalStateException("Cannot find node score " + 
+								"and degree for " + a);
+					}
+					if(!nodeScoreMap.containsKey(b) || !degreeMap.containsKey(b))
+					{
+						throw new IllegalStateException("Cannot find node score " + 
+								"and degree for " + b);
+					}
+					buf.append("\t").append(nodeScoreMap.get(a)).append("\t").append(nodeScoreMap.get(b));
+					buf.append("\t").append(degreeMap.get(a)).append("\t").append(degreeMap.get(b));
+					
+					// Finally, write the scores for this pair from each metric
+					// and the rank from this metric
+					for(int s = 0; s < scoresList.size(); s++)
+					{
+						// The genetic interaction score
+						if(!genIntsList.get(s).containsKey(pair))
+						{
+							throw new IllegalStateException("Cannot find all genetic " + 
+									"interaction scores for " + pair);
+						}
+						buf.append("\t").append(genIntsList.get(s).get(pair));
+						
+						// The observed double deletion score
+						if(!pairsScoresList.get(s).containsKey(pair))
+						{
+							throw new IllegalStateException("Cannot find all pairwise metric " + 
+									"scores for " + pair);
+						}
+						buf.append("\t").append(pairsScoresList.get(s).get(pair));
+						
+						// The expected double deletion score and observed
+						// single deletion scores				
+						if(!scoresList.get(s).containsKey(a) || !scoresList.get(s).containsKey(b))
+						{
+							throw new IllegalStateException("Cannot find all metric scores " + 
+									"for " + pair);
+						}
+						buf.append("\t").append(scoresList.get(s).get(a)*scoresList.get(s).get(b));
+						buf.append("\t").append(scoresList.get(s).get(a));
+						buf.append("\t").append(scoresList.get(s).get(b));
+					}
+					for(HashMap<String, Integer> rankMetric : pairsRanksList)
+					{
+						if(!rankMetric.containsKey(pair))
+						{
+							throw new IllegalStateException("Cannot find all metric ranks " + 
+									"for " + pair);
+						}
+						buf.append("\t").append(rankMetric.get(pair));
+					}
+					writer.println(buf);
+				}
+
+				writer.close();
+			}
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
 	
 	/**
 	 * Calculate node scores based on the predicted impact to downstream targets

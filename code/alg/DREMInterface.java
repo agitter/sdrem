@@ -223,10 +223,6 @@ public class DREMInterface {
 					// Multiply the percentile by 5, the usual value for k,
 					// to get the final target score
 					writer.println(curTf + "\t" + (percentile * 5));
-					// TODO temporarily removed getStandard, should handle
-					// with a synonyms file
-//					writerStd.println(MapUtil.getStandard(curTf) + "\t" + percentile + "\t" +
-//							(percentile * 5) + "\t" + curActivity);
 					writerStd.println(curTf + "\t" + percentile + "\t" +
 							(percentile * 5) + "\t" + curActivity);
 				}

@@ -346,7 +346,6 @@ public class UndirEdge extends Edge {
 		return id;
 	}
 	
-	// TODO use logspace?
 	/**
 	 * @return the sum of the max weights of all paths that use this edge in
 	 * the backward direction

@@ -36,6 +36,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Contains the main method for edge orientation.  Specifies the
@@ -46,7 +47,7 @@ import java.util.Properties;
 
 public class SDREM {
 	
-	private static final String VERSION_MESSAGE = "SDREM version 1.1";
+	private static final String VERSION_MESSAGE = "SDREM version 1.2";
 
 	public static void main(String[] args)
 	{
@@ -84,7 +85,9 @@ public class SDREM {
 			FileInputStream propsIn = new FileInputStream(propFile);
 			props.load(propsIn);
 			propsIn.close();
-
+			
+			checkProperties(props);
+			
 			runSDREM(props.getProperty("edges.file"),
 					props.getProperty("sources.file"),
 					props.getProperty("model.dir"),
@@ -104,7 +107,8 @@ public class SDREM {
 					Double.parseDouble(props.getProperty("node.thresh")),
 					Double.parseDouble(props.getProperty("default.node.prior")),
 					Double.parseDouble(props.getProperty("min.prior")),
-					Float.parseFloat(props.getProperty("random.target.ratio")));
+					Float.parseFloat(props.getProperty("random.target.ratio")),
+					props.getProperty("predict.knockdown"));
 		}
 		catch(IOException e)
 		{
@@ -137,7 +141,8 @@ public class SDREM {
 			double nodeThresh,
 			double defaultNodePrior,
 			double minPrior,
-			float randTargThreshold
+			float randTargThreshold,
+			String predictKnockdown
 			)
 	{
 		// Does not yet support resuming SDREM at an iteration > 1
@@ -212,7 +217,7 @@ public class SDREM {
 
 				TargetScores.adjustPrior(targetScores, targetThresh, nodeScores, nodeThresh, oldPrior, newPrior, minPrior);
 
-				// TODO the last orientation in rankedPathNodeScore could save this
+				// TODO the best orientation in rankedPathNodeScore could save this
 				// Orient the network once more and save the orientations and
 				// write a list of all edges on paths
 				Graph g = new Graph();
@@ -245,12 +250,62 @@ public class SDREM {
 				System.out.println("Total time (s): " + ((stop - start)/1000));
 				ps.close();
 			}
-
+			// Create a new output file for post processing
+			PrintStream ps = new PrintStream(new FileOutputStream(modelDir + "postProcessing.out"));
+			System.setOut(ps);
+			
 			// After all iterations have run, run meta-analysis on the results
+			// Output the changes in the targets over the iterations
 			TargetScores.analyzeTargetChanges(lastItr,
 					".targets", modelDir, modelDir + "targetsByIteration.txt",
 					modelDir + "newTargets.txt",
 					modelDir + "droppedTargets.txt");
+			
+			// Load the sources, targets, and internal nodes
+			HashMap<String, Set<String>> lastItrNodes = TargetScores.loadSDREM(srcFile,
+					modelDir + lastItr + ".targets",
+					modelDir,
+					"nodeScores_itr" + lastItr + "_",
+					nodeThresh);
+			// Write Cytoscape files for the sources, targets, and internal nodes
+			// and the edges between them
+			CytoscapeInterface.generateCytoscape(lastItrNodes,
+					modelDir + "pathEdges_itr" + lastItr + ".txt",
+					modelDir + "topPathEdges_itr" + lastItr + ".sif",
+					modelDir + "topPathNodes_itr" + lastItr + ".noa");
+			
+			// Predict single RNAi screen hits and genetic interactions if desired
+			if(!predictKnockdown.equals(""))
+			{
+				// Assume top, switch to all if specified
+				double pgsNodeThresh = nodeThresh;
+				if(predictKnockdown.equalsIgnoreCase("SingleAll") || 
+						predictKnockdown.equalsIgnoreCase("DoubleAll"))
+				{
+					pgsNodeThresh = 0;
+				}
+				// Assume single, switch to double if specified
+				String pairsOutFile = "";
+				if(predictKnockdown.equalsIgnoreCase("DoubleTop") || 
+						predictKnockdown.equalsIgnoreCase("DoubleAll"))
+				{
+					pairsOutFile = modelDir + "doubleKnockdown_itr" + lastItr + ".txt";
+				}
+				// Predict the knockdown effects
+				TargetScores.predictGeneticScreens(edgeFile,
+						srcFile,
+						modelDir + lastItr + ".targets",
+						nodePriorsFile,
+						defaultNodePrior,
+						modelDir,
+						"nodeScores_itr" + lastItr + "_",
+						pgsNodeThresh,
+						topRankedPaths,
+						modelDir + "satisfiedPaths_itr" + lastItr + ".txt.gz",
+						modelDir + "singleKnockdown_itr" + lastItr + ".txt",
+						pairsOutFile);
+			} // end knockdown prediction
+			ps.close();
 		}
 		catch(Exception e)
 		{
@@ -284,5 +339,25 @@ public class SDREM {
 		defaults.setProperty("default.node.prior", "1.0");
 		defaults.setProperty("min.prior", "0.01");
 		defaults.setProperty("random.target.ratio", "1");
+		defaults.setProperty("predict.knockdown", ""); // Do not predict knockdown effects
+	}
+	
+	/**
+	 * Error checking for some of the SDREM properties
+	 * @param props
+	 */
+	public static void checkProperties(Properties props)
+	{
+		String pk = props.getProperty("predict.knockdown");
+		if(!pk.equalsIgnoreCase("") &&
+				!pk.equalsIgnoreCase("SingleTop") &&
+				!pk.equalsIgnoreCase("SingleAll") &&
+				!pk.equalsIgnoreCase("DoubleTop") &&
+				!pk.equalsIgnoreCase("DoubleAll"))
+		{
+			throw new IllegalStateException(pk + " is not a valid value " +
+					"for the predict.knockdown property.  Choose '', 'SingleTop', " +
+					"'SingleAll', 'DoubleTop', or 'DoubleAll'");
+		}
 	}
 }

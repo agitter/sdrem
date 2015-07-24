@@ -33,6 +33,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -121,7 +122,7 @@ public class CytoscapeInterface {
 				}
 				count++;
 			}
-			
+			reader.close();
 			sifWriter.close();
 		}
 		catch(IOException e)
@@ -129,6 +130,100 @@ public class CytoscapeInterface {
 			e.printStackTrace();
 		}
 	}
+	
+	
+	/**
+	 * This version of generateCytoscape takes a map that has the sets
+	 * of source, target, and internal nodes already loaded.  It fixes the number
+	 * of edges matches to be 2.
+	 * @param modelNodes
+	 * @param pathEdges
+	 * @param sifOut The edges that are between two model members
+	 * @param noaOut The roles of the nodes in the SDREM model
+	 */
+	public static void generateCytoscape(HashMap<String, Set<String>> modelNodes,
+			String pathEdges, String sifOut, String noaOut)
+	{
+		// Fix edgeMatches
+		int edgeMatches = 2;
+		if(edgeMatches < 0 || edgeMatches > 2)
+		{
+			throw new IllegalArgumentException("Only 0, 1, or 2 proteins in a edge " + 
+					"can be required to be a node of interest");
+		}
+		
+		try
+		{
+			Set<String> sources = modelNodes.get("sources");
+			Set<String> targets = modelNodes.get("targets");
+			Set<String> internal = modelNodes.get("internal");
+
+			HashSet<String> all = new HashSet<String>();
+			all.addAll(sources);
+			all.addAll(targets);
+			all.addAll(internal);
+			ArrayList<String> allList = new ArrayList<String>(all);
+			Collections.sort(allList);
+
+			PrintWriter noaWriter = new PrintWriter(new FileWriter(noaOut));
+			noaWriter.println("Role (class=java.lang.String)");
+			for(String protein : allList)
+			{
+				noaWriter.print(protein + " = ");
+				
+				if(sources.contains(protein) && targets.contains(protein))
+				{
+					noaWriter.println("Source/Target");
+				}
+				else if(sources.contains(protein))
+				{
+					noaWriter.println("Source");
+				}
+				else if(targets.contains(protein))
+				{
+					noaWriter.println("Target");
+				}
+				else
+				{
+					noaWriter.println("Internal");
+				}
+			}
+			noaWriter.close();
+						
+			PrintWriter sifWriter = new PrintWriter(new FileWriter(sifOut));
+			BufferedReader reader = new BufferedReader(new FileReader(pathEdges));
+			// Skip the heading
+			String line = reader.readLine();
+			while((line = reader.readLine()) != null)
+			{
+				String[] parts = line.split("\t");
+				// parts[0] : source
+				// parts[1] : interaction type
+				// parts[2] : target
+				// parts[3] : is oriented
+				// parts[4] : weight
+				String src = parts[0].trim().toUpperCase();
+				String targ = parts[2].trim().toUpperCase();
+				
+				// See if enough interactions in the edge match the nodes of interest
+				// to print the edge
+				if((edgeMatches == 0) ||
+					(edgeMatches == 1 && (all.contains(src) || all.contains(targ))) ||
+					(edgeMatches == 2 && all.contains(src) && all.contains(targ)))
+				{
+					// Don't try to find a synonym or id for the nodes
+					sifWriter.println(src + " " + parts[1] + " " + targ);
+				}
+			}
+			reader.close();
+			sifWriter.close();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
 	
 	/**
 	 * Similar to generateCytoscape except creates another noa file denoting screen hits.

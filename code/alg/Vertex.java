@@ -41,7 +41,6 @@ import util.MapUtil;
 
 public class Vertex implements Comparable<Vertex>{
 
-	// TODO logspace or not?  Assume no for now
 	private static double defaultWeight = 1;
 	private static double defaultTargWeight = 1;
 	
@@ -55,11 +54,9 @@ public class Vertex implements Comparable<Vertex>{
 	private static double maxTargWeight = Double.NEGATIVE_INFINITY;
 	
 	private double weight, targWeight;
-	/** If the vertex id is [name]_[info], the name is used.  If there is
-	 * no info, the id and name are the same */
+	/** The vertex id and name are now identical */
 	private String name;
-	/** An id is a gene name appended with _[info] where info is
-	 * used to differentiate this vertex from another with the same name */
+	/** The vertex id and name are now identical */
 	private String id;
 	/** A non-negative, numerical id used for this vertex when it appears
 	 * in a lp_solve linear program.  Assigned automatically and cannot
@@ -83,20 +80,10 @@ public class Vertex implements Comparable<Vertex>{
 		setTargetWeight(targWeight);
 		this.id = id;
 		lpId = nextLpId++;
-		
-		if(id.contains("_"))
-		{
-			int index = id.indexOf('_');
-			name = id.substring(0, index);
-		}
-		else
-		{
-			name = id;
-		}
+		// No longer store separate name and id
+		name = id;
 	}
-	
-	// TODO perhaps also maintain a map of vertex names to vertices since
-	// multiple vertices can have the same name
+
 	/**
 	 * Create a new Vertex or return the existing Vertex with this id.
 	 * The Vertex's weights need to be set separately.
@@ -162,7 +149,7 @@ public class Vertex implements Comparable<Vertex>{
 			priors = new HashMap<String, Double>(strPriors.size());
 			for(String id : strPriors.keySet())
 			{
-				priors.put(id, Double.valueOf(strPriors.get(id)));
+				priors.put(id.toUpperCase().trim(), Double.valueOf(strPriors.get(id)));
 			}
 		}
 		

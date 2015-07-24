@@ -1,15 +1,13 @@
 #!/bin/sh
 ## Set stderr and stdout using absolute directories
-#PBS -o /home/agitter/human/egf/sdrem011712/sdrem011712egf.out
-#PBS -e /home/agitter/human/egf/sdrem011712/sdrem011712egf.err
+#PBS -o /home/agitter/human/egf/storedPaths/allPathsEgfPriors.out
+#PBS -e /home/agitter/human/egf/storedPaths/allPathsEgfPriors.err
 ## Name the job
-#PBS -N sdrem011712egf
+#PBS -N allPathsEgfPriors
 ## Run on a single node and 8 cores on that node
 #PBS -l nodes=1:ppn=8
 ## Estimated max RAM is for Java heap (2 GB per each of 8 threads) plus extra buffer
 #PBS -l mem=20gb
-## walltime in hh:mm:ss
-#PBS -l walltime=72:00:00
 ## Select the queue
 #PBS -q zbj1
 
@@ -22,5 +20,5 @@ echo Job id is $PBS_JOBID
 echo Queue used is $PBS_O_QUEUE
 echo Time is `date`
 
-## Start SDREM
-java -Xmx16g -jar sdrem.jar ../../human/egf/sdrem011712/sdrem011712egf.props
+## Start StorePaths.jar
+java -Xmx16g -jar StorePaths.jar /home/agitter/human/egf/storedPaths/allPathsEgfPriors.props

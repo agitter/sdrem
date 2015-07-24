@@ -39,7 +39,6 @@ import java.util.List;
 
 public abstract class Edge {
 	
-	// TODO logspace or not?  Assume no for now
 	protected static final double DEFAULT_WEIGHT = 1;
 	/** Track the largest edge weight seen so far among all types of edges */
 	protected static double maxWeight = Double.NEGATIVE_INFINITY;
@@ -186,14 +185,12 @@ public abstract class Edge {
 	{
 		return getSource().getName() + ":" + getTarget().getName();
 	}
-	
-	// TODO what is best to print?
+
 	public String toString()
 	{
 		return printVertices();
 	}
 	
-	// TODO use logspace?
 	/**
 	 * @return the sum of the max weights of all paths that use this edge in
 	 * the forward direction
@@ -210,7 +207,6 @@ public abstract class Edge {
 	}
 	
 	
-	// TODO use logspace?
 	/**
 	 * @return the sum of the active weights of all paths that use this edge in
 	 * the forward direction

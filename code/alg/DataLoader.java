@@ -106,7 +106,6 @@ public class DataLoader {
 		reader.close();
 	}
 
-	// TODO test this code
 	/**
 	 * Reads a list of directed edges from the EDA file (Cytoscape edge attribute file)
 	 * output by the Physical Network Models (PNM) code.

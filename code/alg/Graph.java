@@ -2492,7 +2492,6 @@ public class Graph implements Observer{
 		writer.close();
 	}
 
-	// TODO remove after testing
 	/**
 	 * Only prints undirected edges
 	 */

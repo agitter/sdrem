@@ -34,8 +34,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
-import util.StrOps;
-
 
 /**
  * A series of edges that connect a source and target when
@@ -47,7 +45,6 @@ import util.StrOps;
 
 public class Path {
 
-	// TODO decide a threshold
 	/** Paths with optimal weight below this threshold are considered 
 	 * weak and are ignored */
 	protected static final double WEIGHT_THRESHOLD = 0.0;
@@ -233,8 +230,7 @@ public class Path {
 		cachedAvgSatEdgeUses = sum / getNumEdges();
 	}
 
-	
-	// TODO this isn't in logspace, is that OK?
+
 	/**
 	 * Calculate and store the max, average, and minimum edge weight
 	 * of edges along the path.  Calculates the versions with
@@ -361,7 +357,6 @@ public class Path {
 		return length + 1;
 	}
 	
-	// TODO this isn't in logspace.  Is that OK?
 	// Do not change the path weight calculation without updating path finding
 	// methods in Graph
 	/**

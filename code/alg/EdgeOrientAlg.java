@@ -121,12 +121,6 @@ public class EdgeOrientAlg {
 		randomOrient();
 		graphStateChanged();
 
-
-		// TODO decide what to do about output
-//		writer.println(prefix + "\t" + counter + "\t" + random + "\t" +
-//		global + "\t" + maxGlobal + "\t" + numMultiFlip);
-//		writer.flush();
-
 		double global = globalScore();
 		System.out.println("Score from random orientation : "+ global);
 		System.out.println("Max possible: " + maxGlobalScore() + "\n");
@@ -214,11 +208,7 @@ public class EdgeOrientAlg {
 			"random orientation");
 			randomOrient();
 		}
-
-		// TODO decide what to do about output
-		// This String will be prepended to every line of output
-		//prefix += "\t" + paths.size() + "\t" + usedCount + "\t" + fixCount + "\t" + edges.size();
-
+		
 		double global = globalScore();
 		int counter = 0;
 
@@ -284,11 +274,6 @@ public class EdgeOrientAlg {
 		global = globalScore();
 		System.out.println("\nEdge flip local search: " + global);
 		System.out.println("Max possible: " + maxGlobalScore() + "\n");
-
-		// TODO decide what to do about output
-//		writer.println(prefix + "\t" + counter + "\t" + random + "\t" +
-//		global + "\t" + maxGlobal + "\t" + numMultiFlip);
-//		writer.flush();
 
 		return global;
 	}
@@ -390,12 +375,6 @@ public class EdgeOrientAlg {
 		}
 		System.out.println("Added relations for all conflict paths");
 		writer.println("</relations>\n");
-		
-		// TODO need to figure out how to represent infinity
-		// Set an infinite maximal cost because we do not consider any
-		// solution to be infeasible no matter how large its cost is
-//		writer.println("<constraints nbConstraints=\"" + numCp +
-//				"\" maximalCost=\"infinity\">");
 		
 		// Use (1000 * numCp) + 1 as a proxy to infinity because
 		// this cost will never be achieved
@@ -778,101 +757,6 @@ public class EdgeOrientAlg {
 		return global;
 	}
 
-
-	// TODO this implementation is very bad.  Do not use.
-	/**
-	 * Iteratively find the max weight feasible path with edges still
-	 * in conflict and fix all edges along that path in the direction
-	 * it uses them.  This method changes the state of the paths and
-	 * edges in a manner that is not easy to reverse, so it 
-	 * has to rerun findPaths and findConflicts after it orients
-	 * all of the edges to restore the original state.
-	 * 
-	 * @return
-	 */
-	/*
-	public double greedyPathSln()
-	{
-		// Find the paths and conflict edges if needed
-		if(paths == null || conflictEdges == null)
-		{
-			findConflicts();
-		}
-
-		long start = System.currentTimeMillis();
-
-		ArrayList<UndirEdge> originalConflicts = new ArrayList<UndirEdge>(conflictEdges);
-		ArrayList<Path> remainingPaths = new ArrayList<Path>(paths);
-
-		// Loop until all edges are oriented
-		int counter = 0;
-		while(conflictEdges.size() > 0)
-		{
-			// Iterate through all remaining paths and find the max weight path
-			// Also clear out any paths that were rendered infeasible in the
-			// last round
-			Set<Path> infeasible = new HashSet<Path>();
-			Path bestPath = remainingPaths.get(0);
-			double bestWeight = Double.NEGATIVE_INFINITY;
-
-			for(Path p : remainingPaths)
-			{
-				if(!p.isFeasible())
-				{
-					infeasible.add(p);
-				}
-				else
-				{
-					double weight = p.maxWeight();
-					if(weight > bestWeight)
-					{
-						bestWeight = weight;
-						bestPath = p;
-					}
-				}
-			}
-
-			// Fix all edges along the best path
-			bestPath.fixEdges();
-
-			// Remove the infeasible paths and the path that was just fixed
-			remainingPaths.removeAll(infeasible);
-			remainingPaths.remove(bestPath);
-
-			// Update the set of conflict edges
-			findConflicts();
-
-			counter++;
-		}
-
-		long stop = System.currentTimeMillis();
-
-		// Need to save the score before restoring the edges and paths
-		double global = globalScore();
-
-		// Unfix all edges that were fixed during the search
-		for(UndirEdge e : originalConflicts)
-		{
-			e.unfix();
-		}
-
-		// The paths and conflict edges are no longer usable so restore
-		// them to their original state
-		findPaths();
-		findConflicts();
-
-		graphStateChanged();
-
-	    // Report the results
-		System.out.println("Greedy path solution fixed " + counter + " paths in " +
-				" (ms): " + (stop - start));
-		System.out.println("Greedy path solution: " + global);
-		System.out.println("Max possible: " + maxGlobalScore() + "\n");
-
-		return global;
-	}
-	 */
-
 	/**
 	 * Randomly orients all conflict edges (undirected edges that
 	 * have one or more paths that wish to use them in each direction).
@@ -990,7 +874,6 @@ public class EdgeOrientAlg {
 	}
 
 
-	// TODO use multiple threads to speed up?
 	/**
 	 * Use the graph to find paths containing up to depth edges
 	 * from sources to targets.  The paths are stored by the
@@ -1391,7 +1274,6 @@ public class EdgeOrientAlg {
 	}
 
 	
-	// TODO debug, remove later
 	public void printPaths(String file) throws IOException
 	{
 		PrintWriter writer = new PrintWriter(new FileWriter(file));

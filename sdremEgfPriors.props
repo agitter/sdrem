@@ -4,7 +4,7 @@ sources.file = ../../human/egf/sources.txt
 
 # The directory in which output will be written
 # This directory must contain the DREM settings file and the binding priors file
-model.dir = ../../human/egf/sdrem011712
+model.dir = ../../human/egf/sdremEgfPriors
 drem.settings.file = DREM_defaults.txt
 
 # A String used to locate the binding priors file at the first iteration of the form
@@ -14,12 +14,16 @@ binding.priors.file = tfActivityPriors_round
 # Optional location of the file that gives a specific node weight
 # for particular nodes
 # Comment this line out to use the default.node.prior for all nodes
-#node.priors.file =
+node.priors.file = ../../human/egf/egfPriors.txt
 
-# Optional directory that contains one file per target with paths (all or only top-ranked)
+# The weight of all nodes that are not given a node-specific weight in the
+# node.priors.file
+default.node.prior = 0.5
+
+# Optional directory that contains one file per target with paths (all or top-ranked)
 # that terminate at that target
 # Comment this line out to enumerate paths at runtime
-stored.paths.dir = ../../human/egf/storedPaths/allPathsEgf100k/
+stored.paths.dir = ../../human/egf/storedPaths/allPathsEgfPriors100k/
 
 # SDREM iterations
 iterations = 10
@@ -32,7 +36,7 @@ max.path.length = 5
 path.enum.bound = 100000
 
 # The number of random restarts during network orientation (the best solution will be used)
-# and the number of random restarts to use when calcualting node and target scores
+# and the number of random restarts to use when calculating node and target scores
 orientation.restarts = 20
 
 # The number of times to run DREM with randomized binding data
@@ -58,13 +62,16 @@ target.thresh = 0.8
 # binding priors
 node.thresh = 0.01
 
-# The weight of all nodes that are not given a node-specific weight in the
-# node.priors.file
-default.node.prior = 0.5
-
 # The minimum binding prior allowed
 min.prior = 0.01
 
 # The ratio to random targets to real targets when running network orientation with
 # random targets to generate targets scores
 random.target.ratio = 1
+
+# Predict single or double knockdown effects using all nodes or top-ranked nodes
+# whose node score exceeds node.thresh.
+# Possible values: SingleTop, SingleAll, DoubleTop, DoubleAll
+# The option DoubleAll is very slow and not recommended.
+# Comment this line out or leave its value empty to not predict knockdown effects
+predict.knockdown = DoubleTop
