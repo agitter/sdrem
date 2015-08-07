@@ -21,20 +21,13 @@ http://link.springer.com/protocol/10.1007/978-1-4939-2627-5_30
 
 Please cite one or more of those manuscripts if using the software in published work.  The 2015 book chapter provides a step-by-step protocol for using the software.  Contact gitter@biostat.wisc.edu with any questions or for a copy of the book chapter PDF if you cannot access it.
 
-Use of this code implies the user has accepted the terms of license.txt.
-The code requires Java 5.0 or above.
+Use of this code implies the user has accepted the terms of license.txt.  The code requires Java 5.0 or above.
 
-Properties files are used to specify the parameters and input data.
-See the DREM manual (http://sb.cs.cmu.edu/drem/DREMmanual.pdf) for details regarding the gene expression and
-protein-DNA binding file formats.  The TF-gene priors have the same
-format as the DREM protein-DNA binding data file, but have the value 0.5
-instead of 1 for all non-zero entries (assuming uniform initial priors).
+Properties files are used to specify the parameters and input data.  See the DREM manual (http://sb.cs.cmu.edu/drem/DREMmanual.pdf) for details regarding the gene expression and protein-DNA binding file formats.  The TF-gene priors have the same format as the DREM protein-DNA binding data file, but have the value 0.5 instead of 1 for all non-zero entries (assuming uniform initial priors).
 
-Examples of how to run SDREM on a PBS cluster are included.  The maximum Java heap size must be
-increased when working with large networks.
+Examples of how to run SDREM on a PBS cluster are included.  The maximum Java heap size must be increased when working with large networks.
 
-Many intermediate output files are generated during each iteration of SDREM.
-The SDREM executables, code, input files, output produced, and example data are described below:
+Many intermediate output files are generated during each iteration of SDREM.  The SDREM executables, code, input files, output produced, and example data are described below:
 
 
 ***********************************************
