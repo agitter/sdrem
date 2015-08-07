@@ -14,8 +14,12 @@ Anthony Gitter, Ziv Bar-Joseph.
 Bioinformatics. 29:13, 2013.
 http://bioinformatics.oxfordjournals.org/content/29/13/i227.full
 
-Please cite one or both of those manuscripts if using the software in published work.
-Contact gitter@biostat.wisc.edu with any questions.
+The SDREM method for reconstructing signaling and regulatory response networks: Applications for studying disease progression.
+Anthony Gitter, Ziv Bar-Joseph.
+Systems Biology of Alzheimer's Disease.  Methods in Molecular Biology. Volume 1303, 2015.
+http://link.springer.com/protocol/10.1007/978-1-4939-2627-5_30
+
+Please cite one or more of those manuscripts if using the software in published work.  The 2015 book chapter provides a step-by-step protocol for using the software.  Contact gitter@biostat.wisc.edu with any questions or for a copy of the book chapter PDF if you cannot access it.
 
 Use of this code implies the user has accepted the terms of license.txt.
 The code requires Java 5.0 or above.
