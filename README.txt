@@ -27,7 +27,7 @@ Properties files are used to specify the parameters and input data.  See the DRE
 
 Examples of how to run SDREM on a PBS cluster are included.  The maximum Java heap size must be increased when working with large networks.
 
-Many intermediate output files are generated during each iteration of SDREM.  The SDREM executables, code, input files, output produced, and example data are described below:
+Many intermediate output files are generated during each iteration of SDREM.  The SDREM executables, code, input files, output produced, and example data are described below.  See FAQ.md for frequently asked questions and their answers.
 
 
 ***********************************************
