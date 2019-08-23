@@ -4,7 +4,8 @@
 - [TF activity timing](#tftiming)
 - [TF activity score threshold](#tfthreshold)
 - [Randomization error](#randerror)
-
+- [TFInput warning](#tfinput)
+- [Path statistics](#pathstats)
 
 ## <a id='tftiming'>TF activity timing</a>
 **Q:** How do I identify the time points at which TFs are first active?
@@ -33,3 +34,24 @@ The ```N.model.activitiesDynamic``` file can also be used to identify all time p
 **Q:** Why does SDREM throw a randomization error in ```alg.DREMInterface.randomizeBindingPriors```?
 
 **A:** This can occur when the TF-gene interactions file has multiple rows for the same gene.  SDREM assumes that each TF only appears in one column and each gene only appears in one row.
+
+## <a id='tfinput'>TFInput warning</a>
+**Q:** What does the warning `The directory TFInput was not found.Directory not found` mean?
+
+**A:** This warning comes from the orignal version of DREM and its graphical interface.
+It can be safely ignored.
+`TFInput` is a hard-coded directory name that DREM uses to populate a list of TF-gene interaction files in a drop-down menu.
+SDREM does not use a user-selected TF-gene interaction file from this menu.
+The preferred way to specify TF-gene interactions is through the `binding.priors.file` SDREM property.
+To remove the warning, create a directory named `TFInput`.
+
+## <a id='pathstats'>Path statistics</a>
+**Q:** What are the stderr warnings about updating path statistics?
+
+**A:** Warnings like
+```
+97 ms to update path stats
+Updating path statistics
+```
+are part of the normal logging.
+This is written to stderr but does not indicate a problem.
