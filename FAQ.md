@@ -6,6 +6,7 @@
 - [Randomization error](#randerror)
 - [TFInput warning](#tfinput)
 - [Path statistics](#pathstats)
+- [Disconnected network](#disconnected)
 
 ## <a id='tftiming'>TF activity timing</a>
 **Q:** How do I identify the time points at which TFs are first active?
@@ -55,3 +56,13 @@ Updating path statistics
 ```
 are part of the normal logging.
 This is written to stderr but does not indicate a problem.
+
+## <a id='disconnected'>Disconnected network</a>
+**Q:** Why are some of the nodes in the `topPathEdges_itr10.sif` network disconnected from others?
+
+**A:** By default, `topPathEdges_itr10.sif` filters many nodes and edges to produce a simpler, more interpretable visualization of the most important nodes and edges in the SDREM network.
+Edges that are not members of a top-scoring path are excluded.
+Edges that do not have a Source, Target, or Internal node for both endpoints are excluded.
+Internal nodes are nodes that have at least 1% of the top-scoring paths pass through them.
+The 1% threshold is controlled by `node.thresh` in the SDREM properites file.
+The complete network is available in `pathEdges_itr10.txt`.
